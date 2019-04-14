@@ -3,6 +3,7 @@ package com.gmail.jesper.sporron.FS4J.impl;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,13 +30,15 @@ public class NIOFSFile extends FSFile {
 	}
 
 	@Override
-	public boolean writeBytes(final byte[] bytes) {
+	public boolean writeBytes(final byte[] bytes, final boolean append) {
 		try {
-			Files.write(path, bytes);
+			if (!isWriteable()) return false;
+			Files.write(path, bytes, append ? StandardOpenOption.APPEND : null);
+			return true;
 		} catch (final IOException e) {
+			LOGGER.error("Failed to write bytes", e);
 			return false;
 		}
-		return true;
 	}
 
 	@Override

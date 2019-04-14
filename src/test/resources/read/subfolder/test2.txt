@@ -1,0 +1,1 @@
+the file is read/test2.txt

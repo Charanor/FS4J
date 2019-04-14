@@ -1,4 +1,4 @@
-package com.gmail.jesper.sporron.FS4J;
+package com.gmail.jesper.sporron.FS4J.util;
 
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -80,6 +80,8 @@ public class FileEntry {
 
 	public static final FileEntry[] from(final String path, final String divider)
 			throws NullPointerException {
+		if (path == null) throw new NullPointerException("path cannot be null");
+		if (divider == null) throw new NullPointerException("divider cannot be null");
 		final String[] split = path.split(Pattern.quote(divider));
 		final FileEntry[] result = Stream.of(split).map(FileEntry::new).toArray(FileEntry[]::new);
 		return result;

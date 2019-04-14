@@ -1,4 +1,4 @@
-package com.gmail.jesper.sporron.FS4J;
+package com.gmail.jesper.sporron.FS4J.util;
 
 import java.util.Arrays;
 import java.util.Iterator;

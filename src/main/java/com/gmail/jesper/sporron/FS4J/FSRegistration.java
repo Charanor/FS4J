@@ -1,5 +1,7 @@
 package com.gmail.jesper.sporron.FS4J;
 
+import com.gmail.jesper.sporron.FS4J.util.FilePath;
+
 public class FSRegistration {
 	public final FilePath path;
 	public final FileLocation fileLocation;

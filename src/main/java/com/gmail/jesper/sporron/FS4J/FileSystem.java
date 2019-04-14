@@ -2,6 +2,8 @@ package com.gmail.jesper.sporron.FS4J;
 
 import java.util.Optional;
 
+import com.gmail.jesper.sporron.FS4J.util.FilePath;
+
 /** Interface that represents an abstract file system that restricts reading / writing to only
  * specified directories. A file system can handle both directories (e.g. "documents/savegames/") or
  * archives (e.g. "mods/coolmod.zip").
