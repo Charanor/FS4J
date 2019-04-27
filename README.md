@@ -1,3 +1,5 @@
+[![Build Status](https://semaphoreci.com/api/v1/charanor/fs4j/branches/master/shields_badge.svg)](https://semaphoreci.com/charanor/fs4j)
+
 # FS4J
 An abstract file system for Java. The purpose of this project is to increase file I/O safety by isolating what directories users can read from and write to. 
 
