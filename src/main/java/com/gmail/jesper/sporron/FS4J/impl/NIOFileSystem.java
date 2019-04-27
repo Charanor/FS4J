@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import org.slf4j.Logger;
@@ -185,6 +186,10 @@ public class NIOFileSystem implements FileSystem<NIOFSFile> {
 
 		final FilePath minimized = path.minimize();
 		if (!verifyFilePathAndLog(minimized)) return false;
+		if (Objects.isNull(writePath)) {
+			LOGGER.debug("Trying to create directory {} but no write path is set.", minimized);
+			return false;
+		}
 
 		try {
 			final FilePath fqPath = writePath.append(minimized);
@@ -204,6 +209,10 @@ public class NIOFileSystem implements FileSystem<NIOFSFile> {
 
 		final FilePath minimized = path.minimize();
 		if (!verifyFilePathAndLog(minimized)) return Optional.empty();
+		if (Objects.isNull(writePath)) {
+			LOGGER.debug("Trying to create file {} but no write path is set.", minimized);
+			return Optional.empty();
+		}
 
 		try {
 			final FilePath fqPath = writePath.append(minimized);
