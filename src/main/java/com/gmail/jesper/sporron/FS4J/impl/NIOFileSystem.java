@@ -2,8 +2,10 @@ package com.gmail.jesper.sporron.FS4J.impl;
 
 import static java.util.Objects.requireNonNull;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -228,6 +230,82 @@ public class NIOFileSystem implements FileSystem<NIOFSFile> {
 			LOGGER.error("Could not create file '{}': {}", path, e);
 			return Optional.empty();
 		}
+	}
+
+	@Override
+	public boolean delete(final FilePath path) {
+		return deleteInternal(path, false);
+	}
+
+	@Override
+	public boolean forceDelete(final FilePath path) {
+		return deleteInternal(path, true);
+	}
+
+	private boolean deleteInternal(final FilePath path, final boolean force) {
+		requireNonNull(path, "path must not be null");
+
+		final FilePath minimized = path.minimize();
+		if (!verifyFilePathAndLog(minimized)) return false;
+		if (Objects.isNull(writePath)) {
+			LOGGER.debug("Trying to remove {} but no write path is set.", minimized);
+			return false;
+		}
+
+		try {
+			final FilePath fqPath = writePath.append(minimized);
+			final Path nioPath = new NIOFSRegistration(fqPath, FileLocation.EXTERNAL).getPath();
+			LOGGER.debug("Trying to delete '{}'", nioPath.toAbsolutePath());
+			if (force) {
+				return forceDelInternal(nioPath);
+			} else {
+				return delInternal(nioPath);
+			}
+		} catch (final DirectoryNotEmptyException e) {
+			if (!force)
+				LOGGER.warn(
+						"Could not delete {} because it is a non-empty directory. Use FileSystem#forceDelete instead.",
+						path);
+			else
+				LOGGER.error(
+						"Fatal error trying to delete {}, directory not empty even though delete was forced!",
+						path);
+			return false;
+		} catch (final URISyntaxException | IOException | SecurityException e) {
+			LOGGER.error("Could not delete '{}': {}", path, e);
+			return false;
+		}
+	}
+
+	private boolean forceDelInternal(final Path nioPath) throws IOException {
+		// Delete all files (not folders). We have to do this first
+		// because we can't delete non-empty folders.
+		boolean success = Files.walk(nioPath).filter(Files::isRegularFile).map(Path::toFile)
+				.map(File::delete).allMatch(b -> b);
+		if (!success) {
+			LOGGER.warn("Could not empty all files from sub-directories of {}",
+					nioPath.toAbsolutePath());
+			return false;
+		}
+
+		// Delete all folders too
+		success = Files.walk(nioPath).map(Path::toFile).map(File::delete).allMatch(b -> b);
+		if (!success) {
+			LOGGER.warn("Could not delete empty directories at {}", nioPath.toAbsolutePath());
+			return false;
+		}
+
+		LOGGER.info("Deleted {}", nioPath.toAbsolutePath());
+		return true;
+	}
+
+	private boolean delInternal(final Path nioPath) throws IOException {
+		final boolean success = Files.deleteIfExists(nioPath);
+		if (success)
+			LOGGER.info("Deleted '{}'", nioPath.toAbsolutePath());
+		else
+			LOGGER.warn("Failed to delete file '{}'", nioPath.toAbsolutePath());
+		return success;
 	}
 
 	private boolean verifyFilePathAndLog(final FilePath path) {

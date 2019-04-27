@@ -118,6 +118,43 @@ public interface FileSystem<T extends FSFile> {
 	 *         created. */
 	Optional<T> createFile(FilePath path);
 
+	/** Removes a file or directory present in the write directory. Cannot remove a directory if it
+	 * contains files or non-empty child directories.
+	 *
+	 * @param path
+	 *            the path
+	 * @return true if the file/directory was removed, false otherwise
+	 * @see FileSystem#forceDelete(FilePath) */
+	boolean delete(FilePath path);
+
+	/** Removes a file or directory present in the write directory, including all files in that
+	 * directory and all child directories.
+	 *
+	 * @param path
+	 *            the path to the directory
+	 * @return true if the file/directory was removed, false otherwise
+	 * @see FileSystem#delete(FilePath) */
+	boolean forceDelete(FilePath path);
+
+	/** Convenience function that converts a string to a {@link FilePath} then calls
+	 * {@link FileSystem#delete(FilePath)}.
+	 *
+	 * @param path
+	 * @return true if the file was removed, false otherwise */
+	default boolean delete(final String path) {
+		return delete(FilePath.from(path));
+	}
+
+	/** Convenience function that converts a string to a {@link FilePath} then calls
+	 * {@link FileSystem#forceDelete(FilePath)}.
+	 *
+	 * @param path
+	 *            the path
+	 * @return true if the directory was removed, false otherwise */
+	default boolean forceDelete(final String path) {
+		return forceDelete(FilePath.from(path));
+	}
+
 	/** Convenience function that converts a string to a {@link FilePath} then calls
 	 * {@link FileSystem#addToSearchPath(FilePath, FileLocation)}.
 	 *
