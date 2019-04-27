@@ -1,10 +1,13 @@
 package com.gmail.jesper.sporron.FS4J.impl;
 
+import static java.util.Objects.requireNonNull;
+
 public class PreReadNIOFSFile extends NIOFSFile {
 	private final byte[] bytes;
 
 	public PreReadNIOFSFile(final byte[] readBytes) {
 		super(null, false);
+		requireNonNull(readBytes, "readBytes must not be null (but can be empty)");
 		this.bytes = readBytes;
 	}
 
@@ -25,5 +28,4 @@ public class PreReadNIOFSFile extends NIOFSFile {
 	public boolean isWriteable() {
 		return false;
 	}
-
 }

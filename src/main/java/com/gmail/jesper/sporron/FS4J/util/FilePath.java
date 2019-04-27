@@ -1,8 +1,11 @@
 package com.gmail.jesper.sporron.FS4J.util;
 
+import static java.util.Objects.requireNonNull;
+
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /** Represents an immutable full file path, e.g. <code>"music/dungeon/dungeon_dark.mp"</code>.
  *
@@ -11,7 +14,8 @@ public class FilePath implements Iterable<FileEntry> {
 	private final FileEntry[] entries;
 
 	public FilePath(final FileEntry[] entries) {
-		this.entries = entries;
+		this.entries = requireNonNull(entries, "entries must not be null");
+		Stream.of(entries).forEach(e -> requireNonNull(e, "entries in the array must not be null"));
 	}
 
 	/** Checks if this path contains the specified {@link FileEntry}.
@@ -20,9 +24,10 @@ public class FilePath implements Iterable<FileEntry> {
 	 *            the entry to check
 	 * @return true if this path contains the entry, false otherwise */
 	public boolean containsEntry(final FileEntry entry) {
-		for (final FileEntry ent : entries) {
+		requireNonNull(entry, "entry must not be null");
+
+		for (final FileEntry ent : entries)
 			if (ent.equals(entry)) return true;
-		}
 		return false;
 	}
 
@@ -33,6 +38,7 @@ public class FilePath implements Iterable<FileEntry> {
 	 * @return true if this path contains the text, false otherwise
 	 * @see String#contains(CharSequence) */
 	public boolean containsText(final String text) {
+		requireNonNull(text, "text must not be null");
 		return toString().contains(text);
 	}
 
@@ -42,6 +48,8 @@ public class FilePath implements Iterable<FileEntry> {
 	 *            the entry to append
 	 * @return a new FilePath with the FileEntry prepended to this path. */
 	public FilePath prepend(final FileEntry entry) {
+		requireNonNull(entry, "entry must not be null");
+
 		final FileEntry[] newEntries = new FileEntry[this.entries.length + 1];
 		System.arraycopy(entries, 0, newEntries, 1, entries.length);
 		newEntries[0] = entry;
@@ -54,6 +62,7 @@ public class FilePath implements Iterable<FileEntry> {
 	 *            the FilePath to prepend
 	 * @return a new FilePath with the path prepended to this path. */
 	public FilePath prepend(final FilePath other) {
+		requireNonNull(other, "other must not be null");
 		return other.append(this);
 	}
 
@@ -63,6 +72,8 @@ public class FilePath implements Iterable<FileEntry> {
 	 *            the entry to append
 	 * @return a new FilePath with the FileEntry appended to this path. */
 	public FilePath append(final FileEntry entry) {
+		requireNonNull(entry, "entry must not be null");
+
 		final FileEntry[] newEntries = new FileEntry[this.entries.length + 1];
 		System.arraycopy(entries, 0, newEntries, 0, entries.length);
 		newEntries[this.entries.length] = entry;
@@ -75,6 +86,8 @@ public class FilePath implements Iterable<FileEntry> {
 	 *            the FilePath to append
 	 * @return a new FilePath with the path appended to this path. */
 	public FilePath append(final FilePath other) {
+		requireNonNull(other, "other must not be null");
+
 		final FileEntry[] newEntries = new FileEntry[this.entries.length + other.entries.length];
 		System.arraycopy(entries, 0, newEntries, 0, entries.length);
 		System.arraycopy(other.entries, 0, newEntries, entries.length, other.entries.length);
@@ -131,8 +144,10 @@ public class FilePath implements Iterable<FileEntry> {
 		return FileEntry.join(entries);
 	}
 
-	/** @param numEntries
-	 * @return */
+	/** Returns the string representation of this path, up to a certain amount of entries.
+	 *
+	 * @param numEntries
+	 *            how many entries to include */
 	public String toString(final int numEntries) {
 		return Arrays.stream(entries).limit(numEntries).map(FileEntry::toString)
 				.collect(Collectors.joining("/"));
@@ -161,7 +176,34 @@ public class FilePath implements Iterable<FileEntry> {
 		return true;
 	}
 
+	/** Creates a {@link FilePath} from the input path and divider. E.g:
+	 *
+	 * <code><pre>
+	 * >> FilePath path = FilePath.from("data/colors/bright", "/");
+	 * >> path.toString();
+	 * data/colors/bright
+	 * </pre></code>
+	 *
+	 *
+	 *
+	 * @param path
+	 *            the path
+	 * @param divider
+	 *            the divider
+	 * @return the constructed FilePath
+	 * @see FileEntry#from(String, String) */
+	public static final FilePath from(final String path, final String divider) {
+		requireNonNull(path, "path must not be null");
+		requireNonNull(divider, "divider must not be null");
+		return new FilePath(FileEntry.from(path, divider));
+	}
+
+	/** Convenience method for calling <code>FilePath.from(path, "/")</code>
+	 *
+	 * @param path
+	 *            the path
+	 * @return */
 	public static final FilePath from(final String path) {
-		return new FilePath(FileEntry.from(path));
+		return from(path, "/");
 	}
 }

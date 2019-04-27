@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,6 +32,7 @@ public class NIOFSFile extends FSFile {
 
 	@Override
 	public boolean writeBytes(final byte[] bytes, final boolean append) {
+		Objects.requireNonNull(bytes, "bytes must not be null");
 		try {
 			if (!isWriteable()) return false;
 			Files.write(path, bytes, append ? StandardOpenOption.APPEND : null);

@@ -1,5 +1,7 @@
 package com.gmail.jesper.sporron.FS4J;
 
+import java.util.Objects;
+
 /** Class representing a file in the abstract file system. Writing to the file is prohibited unless
  * it is in the write directory.
  *
@@ -37,6 +39,7 @@ public abstract class FSFile {
 	 * @return true if this file is in the write directory and the entire string was written, false
 	 *         otherwise */
 	public boolean writeString(final String stringToWrite, final boolean append) {
+		Objects.requireNonNull(stringToWrite, "stringToWrite must not be null");
 		return writeBytes(stringToWrite.getBytes(), append);
 	}
 

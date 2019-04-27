@@ -1,5 +1,7 @@
 package com.gmail.jesper.sporron.FS4J.impl;
 
+import static java.util.Objects.requireNonNull;
+
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -23,15 +25,8 @@ public class NIOFSRegistration {
 
 	public NIOFSRegistration(final FilePath filePath, final FileLocation location)
 			throws URISyntaxException {
-		if (filePath == null) {
-			LOGGER.error("filePath is null.");
-			throw new NullPointerException("filePath must not be null.");
-		}
-
-		if (location == null) {
-			LOGGER.error("location is null.");
-			throw new NullPointerException("location must not be null.");
-		}
+		requireNonNull(filePath, "filePath must not be null");
+		requireNonNull(location, "location must not be null");
 
 		this.filePath = filePath;
 		this.location = location;

@@ -1,17 +1,23 @@
 package com.gmail.jesper.sporron.FS4J;
 
+import static java.util.Objects.requireNonNull;
+
 import com.gmail.jesper.sporron.FS4J.util.FilePath;
 
-public class FSRegistration {
+class FSRegistration {
 	public final FilePath path;
 	public final FileLocation fileLocation;
 
 	public FSRegistration(final FilePath path, final FileLocation fileLocation) {
+		requireNonNull(path, "path must not be null");
+		requireNonNull(fileLocation, "fileLocation must not be null");
 		this.path = path;
 		this.fileLocation = fileLocation;
 	}
 
 	public FSRegistration(final String path, final FileLocation fileLocation) {
+		requireNonNull(path, "path must not be null");
+		requireNonNull(fileLocation, "fileLocation must not be null");
 		this.path = FilePath.from(path);
 		this.fileLocation = fileLocation;
 	}

@@ -1,5 +1,7 @@
 package com.gmail.jesper.sporron.FS4J.impl;
 
+import static java.util.Objects.requireNonNull;
+
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.FileAlreadyExistsException;
@@ -34,6 +36,9 @@ public class NIOFileSystem implements FileSystem<NIOFSFile> {
 
 	@Override
 	public boolean addToSearchPath(final FilePath path, final FileLocation location) {
+		requireNonNull(path, "path must not be null");
+		requireNonNull(location, "location must not be null");
+
 		final FilePath minimized = path.minimize();
 		if (!verifyFilePathAndLog(minimized)) return false;
 
@@ -53,6 +58,8 @@ public class NIOFileSystem implements FileSystem<NIOFSFile> {
 
 	@Override
 	public boolean isOnSearchPath(final FilePath path) {
+		requireNonNull(path, "path must not be null");
+
 		final FilePath minimized = path.minimize();
 		if (!verifyFilePathAndLog(minimized)) return false;
 		return registrations.stream().anyMatch(reg -> reg.getFilePath().equals(minimized));
@@ -60,6 +67,9 @@ public class NIOFileSystem implements FileSystem<NIOFSFile> {
 
 	@Override
 	public boolean addAllArchivesToSearchPath(final FilePath path, final FileLocation location) {
+		requireNonNull(path, "path must not be null");
+		requireNonNull(location, "location must not be null");
+
 		final FilePath minimized = path.minimize();
 		if (!verifyFilePathAndLog(minimized)) return false;
 
@@ -68,6 +78,12 @@ public class NIOFileSystem implements FileSystem<NIOFSFile> {
 			boolean success = true;
 			final Path filePath = new NIOFSRegistration(path, location).getPath();
 			final Iterator<Path> it = Files.walk(filePath, 1).iterator();
+
+			// If iterator is somehow empty something went wrong.
+			if (!it.hasNext()) {
+				LOGGER.warn("Iterator over path {} is empty", filePath);
+				return false;
+			}
 
 			// The first element in the iterator is the input path
 			// and we don't want to add that.
@@ -98,6 +114,8 @@ public class NIOFileSystem implements FileSystem<NIOFSFile> {
 
 	@Override
 	public boolean setWriteDirectory(final FilePath path) {
+		requireNonNull(path, "path must not be null");
+
 		this.writePath = path;
 		return true;
 	}
@@ -109,6 +127,9 @@ public class NIOFileSystem implements FileSystem<NIOFSFile> {
 
 	@Override
 	public Optional<NIOFSFile> open(final FilePath path, final FileAccessType accessType) {
+		requireNonNull(path, "path must not be null");
+		requireNonNull(accessType, "accessType must not be null");
+
 		final FilePath minimized = path.minimize();
 		if (!verifyFilePathAndLog(minimized)) return Optional.empty();
 
@@ -160,6 +181,8 @@ public class NIOFileSystem implements FileSystem<NIOFSFile> {
 
 	@Override
 	public boolean createDirectory(final FilePath path) {
+		requireNonNull(path, "path must not be null");
+
 		final FilePath minimized = path.minimize();
 		if (!verifyFilePathAndLog(minimized)) return false;
 
@@ -177,6 +200,8 @@ public class NIOFileSystem implements FileSystem<NIOFSFile> {
 
 	@Override
 	public Optional<NIOFSFile> createFile(final FilePath path) {
+		requireNonNull(path, "path must not be null");
+
 		final FilePath minimized = path.minimize();
 		if (!verifyFilePathAndLog(minimized)) return Optional.empty();
 
@@ -197,6 +222,7 @@ public class NIOFileSystem implements FileSystem<NIOFSFile> {
 	}
 
 	private boolean verifyFilePathAndLog(final FilePath path) {
+		requireNonNull(path, "path must not be null");
 		return FSUtils.isSafePath(path, LOGGER);
 	}
 }
