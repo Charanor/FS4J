@@ -110,8 +110,14 @@ public class FilePath implements Iterable<FileEntry> {
 	 *            where to start (inclusive)
 	 * @param end
 	 *            where to end (exclusive)
+	 * @throws IllegalArgumentException
+	 *             if {@code start} or {@code end} is < 0 OR if start > end.
 	 * @return a new split FilePath */
-	public FilePath subpath(final int start, final int end) {
+	public FilePath subpath(final int start, final int end) throws IllegalArgumentException {
+		if (start < 0) throw new IllegalArgumentException("start must be >= 0");
+		if (end < 0) throw new IllegalArgumentException("end must be >= 0");
+		if (start > end) throw new IllegalArgumentException("start must be <= end");
+
 		final int length = Math.abs(end - start);
 		final FileEntry[] newEntries = new FileEntry[length];
 		System.arraycopy(entries, start, newEntries, 0, length);
@@ -133,9 +139,14 @@ public class FilePath implements Iterable<FileEntry> {
 	 * @return minimized FilePath */
 	public FilePath minimize() {
 		String asString = toString();
-		asString = asString.replaceAll("([\\w\\. ]+)/\\.\\./?", ""); // path/.. -> <nothing>
-		asString = asString.replaceAll("/\\./([\\w\\. ]+)", "/$1"); // /./otherpath -> /otherpath
+		asString = asString.replaceAll("/\\./([^/]+)", "/$1"); // /./otherpath -> /otherpath
+		asString = asString.replaceAll("[^/]+/\\.\\./?", ""); // path/.. -> <nothing>
 		return FilePath.from(asString);
+	}
+
+	/** @return the number of file entries in this path. */
+	public int numEntries() {
+		return entries.length;
 	}
 
 	/** @see FileEntry#join(FileEntry[]) */
@@ -147,8 +158,11 @@ public class FilePath implements Iterable<FileEntry> {
 	/** Returns the string representation of this path, up to a certain amount of entries.
 	 *
 	 * @param numEntries
-	 *            how many entries to include */
+	 *            how many entries to include
+	 * @throws IllegalArgumentException
+	 *             if {@code numEntries} < 0 */
 	public String toString(final int numEntries) {
+		if (numEntries < 0) throw new IllegalArgumentException("numEntries must be >= 0");
 		return Arrays.stream(entries).limit(numEntries).map(FileEntry::toString)
 				.collect(Collectors.joining("/"));
 	}
@@ -174,6 +188,10 @@ public class FilePath implements Iterable<FileEntry> {
 		final FilePath other = (FilePath) obj;
 		if (!Arrays.equals(entries, other.entries)) return false;
 		return true;
+	}
+
+	public boolean equals(final String text) {
+		return toString().equals(text);
 	}
 
 	/** Creates a {@link FilePath} from the input path and divider. E.g:

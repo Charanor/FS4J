@@ -1,12 +1,11 @@
 package com.gmail.jesper.sporron.FS4J.impl;
 
+import static com.gmail.jesper.sporron.FS4J.util.FSUtils.constructNIOPath;
+import static java.util.Objects.isNull;
 import static java.util.Objects.requireNonNull;
 
-import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +20,7 @@ public class NIOFSRegistration {
 
 	private final FilePath filePath;
 	private final FileLocation location;
-	private FileType type;
+	private final FileType type;
 
 	public NIOFSRegistration(final FilePath filePath, final FileLocation location)
 			throws URISyntaxException {
@@ -38,40 +37,16 @@ public class NIOFSRegistration {
 	}
 
 	public Path getPath(final FilePath appendPath) {
-		String strPath;
-		if (appendPath != null) {
-			strPath = filePath.append(appendPath).toString();
-		} else {
-			strPath = filePath.toString();
-		}
-
-		switch (location) {
-		case EXTERNAL: {
-			final Path path = Paths.get(strPath);
-			this.type = FSUtils.getFileType(path);
-			return path;
-		}
-		case INTERNAL: {
-			if (!strPath.startsWith("/")) strPath = "/" + strPath;
-			final URL resource = getClass().getClassLoader().getResource(strPath);
-			if (resource == null) {
-				LOGGER.error("Could not find resource '{}'.", strPath);
-				throw new NullPointerException("Could not find resource " + strPath);
-			}
-			URI uri;
-			try {
-				uri = resource.toURI();
-			} catch (final URISyntaxException e) {
-				LOGGER.error("Could not create path for '{}' ({})", strPath, location);
-				throw new IllegalStateException(e);
-			}
-			final Path path = Paths.get(uri);
-			this.type = FSUtils.getFileType(path);
-			return path;
-		}
-		default:
-			throw new IllegalStateException(
-					String.format("Illegal FileLocation '%s' found.", location));
+		final FilePath path = isNull(appendPath) ? filePath : filePath.append(appendPath);
+		try {
+			final Path nioPath = constructNIOPath(path, location);
+			return nioPath;
+		} catch (final NullPointerException e) {
+			LOGGER.error("Could not create path for '{}' ({})", path, location);
+			throw e;
+		} catch (final URISyntaxException e) {
+			LOGGER.error("Could not create path for '{}' ({})", path, location);
+			throw new IllegalStateException(e);
 		}
 	}
 
