@@ -1,9 +1,12 @@
 package com.gmail.jesper.sporron.FS4J.impl;
 
+import static com.gmail.jesper.sporron.FS4J.util.FSUtils.constructNIOPath;
 import static java.util.Objects.requireNonNull;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -25,7 +28,7 @@ import com.gmail.jesper.sporron.FS4J.util.FSUtils;
 import com.gmail.jesper.sporron.FS4J.util.FilePath;
 
 public class NIOFileSystem implements FileSystem<NIOFSFile> {
-	private final Logger LOGGER = LoggerFactory.getLogger(NIOFileSystem.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(NIOFileSystem.class);
 
 	private final List<NIOFSRegistration> registrations;
 	private FilePath writePath;
@@ -76,8 +79,7 @@ public class NIOFileSystem implements FileSystem<NIOFSFile> {
 
 		try {
 			LOGGER.debug("Adding all archives in path '{}' ({})", path, location);
-			boolean success = true;
-			final Path filePath = new NIOFSRegistration(path, location).getPath();
+			final Path filePath = constructNIOPath(path, location);
 			final Iterator<Path> it = Files.walk(filePath, 1).iterator();
 
 			// If iterator is somehow empty something went wrong.
@@ -89,6 +91,7 @@ public class NIOFileSystem implements FileSystem<NIOFSFile> {
 			// The first element in the iterator is the input path
 			// and we don't want to add that.
 			it.next();
+			boolean success = true;
 			while (it.hasNext()) {
 				final Path p = it.next();
 				final FilePath fp = FilePath.from(p.toString());
@@ -167,7 +170,7 @@ public class NIOFileSystem implements FileSystem<NIOFSFile> {
 				return Optional.empty();
 			case WRITE:
 				final FilePath fqPath = writePath.append(minimized);
-				final Path nioPath = new NIOFSRegistration(fqPath, FileLocation.EXTERNAL).getPath();
+				final Path nioPath = constructNIOPath(fqPath, FileLocation.EXTERNAL);
 				LOGGER.trace("Looking for file '{}' in '{}' ({})", path, writePath,
 						nioPath.toAbsolutePath());
 				return Optional.of(new NIOFSFile(nioPath, false));
@@ -193,7 +196,7 @@ public class NIOFileSystem implements FileSystem<NIOFSFile> {
 
 		try {
 			final FilePath fqPath = writePath.append(minimized);
-			final Path nioPath = new NIOFSRegistration(fqPath, FileLocation.EXTERNAL).getPath();
+			final Path nioPath = constructNIOPath(fqPath, FileLocation.EXTERNAL);
 			final Path createdPath = Files.createDirectories(nioPath);
 			LOGGER.debug("Created directory at '{}'", createdPath.toString());
 			return true;
@@ -216,7 +219,7 @@ public class NIOFileSystem implements FileSystem<NIOFSFile> {
 
 		try {
 			final FilePath fqPath = writePath.append(minimized);
-			final Path nioPath = new NIOFSRegistration(fqPath, FileLocation.EXTERNAL).getPath();
+			final Path nioPath = constructNIOPath(fqPath, FileLocation.EXTERNAL);
 			LOGGER.debug("Trying to create file at '{}'", nioPath.toAbsolutePath());
 			final Path createdFilePath = Files.createFile(nioPath);
 			LOGGER.debug("Created file at '{}'", createdFilePath);
@@ -230,7 +233,86 @@ public class NIOFileSystem implements FileSystem<NIOFSFile> {
 		}
 	}
 
-	private boolean verifyFilePathAndLog(final FilePath path) {
+	@Override
+	public boolean delete(final FilePath path) {
+		return deleteInternal(path, false);
+	}
+
+	@Override
+	public boolean forceDelete(final FilePath path) {
+		return deleteInternal(path, true);
+	}
+
+	private boolean deleteInternal(final FilePath path, final boolean force) {
+		requireNonNull(path, "path must not be null");
+
+		final FilePath minimized = path.minimize();
+		if (!verifyFilePathAndLog(minimized)) return false;
+		if (Objects.isNull(writePath)) {
+			LOGGER.debug("Trying to remove {} but no write path is set.", minimized);
+			return false;
+		}
+
+		final FilePath fqPath = writePath.append(minimized);
+		try {
+			final Path nioPath = constructNIOPath(fqPath, FileLocation.EXTERNAL);
+			LOGGER.debug("Trying to delete '{}'", nioPath.toAbsolutePath());
+			if (force) {
+				return forceDelInternal(nioPath);
+			} else {
+				return delInternal(nioPath);
+			}
+		} catch (final DirectoryNotEmptyException e) {
+			if (!force)
+				LOGGER.warn(
+						"Could not delete {} because it is a non-empty directory. Use FileSystem#forceDelete instead.",
+						path);
+			else
+				LOGGER.error(
+						"Fatal error trying to delete {}, directory not empty error even though delete was forced!",
+						path);
+			return false;
+		} catch (final URISyntaxException | IOException | SecurityException e) {
+			LOGGER.error("Could not delete '{}': {}", path, e);
+			return false;
+		}
+	}
+
+	private boolean forceDelInternal(final Path nioPath) throws IOException {
+		requireNonNull(nioPath, "nioPath must not be null");
+		// Delete all files (not folders). We have to do this first
+		// because we can't delete non-empty folders.
+		final boolean allFilesDeleted = Files.walk(nioPath).filter(Files::isRegularFile)
+				.map(Path::toFile).map(File::delete).allMatch(wasDeleted -> wasDeleted);
+		if (!allFilesDeleted) {
+			LOGGER.warn("Could not empty all files from sub-directories of {}",
+					nioPath.toAbsolutePath());
+			return false;
+		}
+
+		// Delete all folders too
+		final boolean allDirsDeleted = Files.walk(nioPath).map(Path::toFile).map(File::delete)
+				.allMatch(wasDeleted -> wasDeleted);
+		if (!allDirsDeleted) {
+			LOGGER.warn("Could not delete empty directories at {}", nioPath.toAbsolutePath());
+			return false;
+		}
+
+		LOGGER.info("Deleted {}", nioPath.toAbsolutePath());
+		return true;
+	}
+
+	private boolean delInternal(final Path nioPath) throws IOException {
+		requireNonNull(nioPath, "nioPath must not be null");
+		final boolean success = Files.deleteIfExists(nioPath);
+		if (success)
+			LOGGER.info("Deleted '{}'", nioPath.toAbsolutePath());
+		else
+			LOGGER.warn("Failed to delete file '{}'", nioPath.toAbsolutePath());
+		return success;
+	}
+
+	private static boolean verifyFilePathAndLog(final FilePath path) {
 		requireNonNull(path, "path must not be null");
 		return FSUtils.isSafePath(path, LOGGER);
 	}
