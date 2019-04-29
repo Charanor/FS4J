@@ -20,7 +20,7 @@ public class NIOFSRegistration {
 
 	private final FilePath filePath;
 	private final FileLocation location;
-	private final FileType type;
+	private FileType type;
 
 	public NIOFSRegistration(final FilePath filePath, final FileLocation location)
 			throws URISyntaxException {
@@ -40,6 +40,7 @@ public class NIOFSRegistration {
 		final FilePath path = isNull(appendPath) ? filePath : filePath.append(appendPath);
 		try {
 			final Path nioPath = constructNIOPath(path, location);
+			this.type = FSUtils.getFileType(nioPath);
 			return nioPath;
 		} catch (final NullPointerException e) {
 			LOGGER.error("Could not create path for '{}' ({})", path, location);
