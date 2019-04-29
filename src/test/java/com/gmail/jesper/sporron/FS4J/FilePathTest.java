@@ -52,7 +52,7 @@ class FilePathTest {
 		assertTrue(prePath.containsText(prepend.toString()));
 
 		assertEquals(prePath.subpath(0, 1).toString(), prepend.toString());
-		assertEquals(prePath.toString(), prepend.toString() + path1.toString());
+		assertEquals(prePath.toString(), prepend.toString() + "/" + path1.toString());
 
 		assertThrows(NullPointerException.class, () -> path1.prepend((FileEntry) null));
 	}
@@ -64,8 +64,8 @@ class FilePathTest {
 
 		assertTrue(prePath.containsText(prepend.toString()));
 
-		assertEquals(prePath.subpath(0, 1).toString(), prepend.toString());
-		assertEquals(prePath.toString(), prepend.toString() + path1.toString());
+		assertEquals(prePath.subpath(0, prepend.numEntries()).toString(), prepend.toString());
+		assertEquals(prePath.toString(), prepend.toString() + "/" + path1.toString());
 
 		assertThrows(NullPointerException.class, () -> path1.prepend((FilePath) null));
 	}
@@ -78,8 +78,9 @@ class FilePathTest {
 		assertTrue(prePath.containsEntry(append));
 		assertTrue(prePath.containsText(append.toString()));
 
-		assertEquals(prePath.subpath(0, 1).toString(), append.toString());
-		assertEquals(prePath.toString(), append.toString() + path1.toString());
+		assertEquals(prePath.subpath(prePath.numEntries() - 1, prePath.numEntries()).toString(),
+				append.toString());
+		assertEquals(prePath.toString(), path1.toString() + "/" + append.toString());
 
 		assertThrows(NullPointerException.class, () -> path1.append((FileEntry) null));
 	}
@@ -91,8 +92,11 @@ class FilePathTest {
 
 		assertTrue(prePath.containsText(append.toString()));
 
-		assertEquals(prePath.subpath(0, 1).toString(), append.toString());
-		assertEquals(prePath.toString(), append.toString() + path1.toString());
+		assertEquals(
+				prePath.subpath(prePath.numEntries() - append.numEntries(), prePath.numEntries())
+						.toString(),
+				append.toString());
+		assertEquals(prePath.toString(), path1.toString() + "/" + append.toString());
 
 		assertThrows(NullPointerException.class, () -> path1.append((FilePath) null));
 	}
@@ -106,12 +110,13 @@ class FilePathTest {
 
 		assertEquals("start must be >= 0",
 				assertThrows(IllegalArgumentException.class, () -> path1.subpath(-2, 0))
-						.toString());
+						.getMessage());
 		assertEquals("end must be >= 0",
 				assertThrows(IllegalArgumentException.class, () -> path1.subpath(0, -2))
-						.toString());
+						.getMessage());
 		assertEquals("start must be <= end",
-				assertThrows(IllegalArgumentException.class, () -> path1.subpath(3, 1)).toString());
+				assertThrows(IllegalArgumentException.class, () -> path1.subpath(3, 1))
+						.getMessage());
 
 		assertEquals(path1, path1.subpath(0, path1.numEntries()));
 	}
@@ -121,17 +126,27 @@ class FilePathTest {
 		final FilePath notMini = FilePath.from("not/././minimized/../path");
 		final FilePath mini = notMini.minimize();
 
+		assertTrue(mini.isMinimized());
+
 		final FilePath expected = FilePath.from("not/path");
 		assertEquals(expected, mini);
 
 		final FilePath shouldNotMini = FilePath.from("should/not/mini");
+		assertTrue(shouldNotMini.isMinimized());
 		assertEquals(shouldNotMini, shouldNotMini.minimize());
 
-		final FilePath shouldNotMini2 = FilePath.from("./../should/not/mini");
+		final FilePath shouldNotMini2 = FilePath.from("../should/not/mini");
+		assertTrue(shouldNotMini2.isMinimized());
 		assertEquals(shouldNotMini2, shouldNotMini2.minimize());
+	}
 
-		final FilePath shouldNotMini3 = FilePath.from("../should/not/mini");
-		assertEquals(shouldNotMini3, shouldNotMini3.minimize());
+	@Test
+	void testIsMinimized() {
+		assertTrue(path1.isMinimized());
+		assertTrue(FilePath.from("./minimized/for/sure").isMinimized());
+		assertTrue(FilePath.from("../minimized/this/is").isMinimized());
+		assertFalse(FilePath.from("/./not/minimized").isMinimized());
+		assertFalse(FilePath.from("this/./is/../././not/minimized").isMinimized());
 	}
 
 	@Test
@@ -169,6 +184,6 @@ class FilePathTest {
 	@Test
 	void testFromString() {
 		assertNotNull(path1);
-		assertEquals("welcome/to/the/moon", path1.toString());
+		assertEquals("welcome/to/the/moon/friend", path1.toString());
 	}
 }

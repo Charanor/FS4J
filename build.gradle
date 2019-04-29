@@ -12,9 +12,13 @@ repositories {
 }
 
 dependencies {
-	implementation "org.eclipse.jdt:org.eclipse.jdt.annotation:2.2.200"
-	implementation "ch.qos.logback:logback-classic:$loggerVersion"
+	implementation     "org.eclipse.jdt:org.eclipse.jdt.annotation:2.2.200"
+	implementation     "ch.qos.logback:logback-classic:$loggerVersion"
 	testImplementation "org.junit.jupiter:junit-jupiter-api:$jUnitVersion"
 	testImplementation "org.junit.jupiter:junit-jupiter-params:$jUnitVersion"
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:$jUnitVersion'
+    testRuntime "org.junit.jupiter:junit-jupiter-engine:$jUnitVersion"
+}
+
+test {
+    useJUnitPlatform()
 }

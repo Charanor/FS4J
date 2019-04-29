@@ -4,6 +4,7 @@ import static java.util.Objects.requireNonNull;
 
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -11,6 +12,10 @@ import java.util.stream.Stream;
  *
  * @author Jesper Sporron */
 public class FilePath implements Iterable<FileEntry> {
+	// private static final Pattern ONE_DOT = Pattern.compile("/\\./([^/]+)");
+	private static final Pattern ONE_DOT = Pattern.compile("/\\./");
+	private static final Pattern TWO_DOTS = Pattern.compile("[^/]+/\\.\\./?");
+
 	private final FileEntry[] entries;
 
 	public FilePath(final FileEntry[] entries) {
@@ -139,9 +144,20 @@ public class FilePath implements Iterable<FileEntry> {
 	 * @return minimized FilePath */
 	public FilePath minimize() {
 		String asString = toString();
-		asString = asString.replaceAll("/\\./([^/]+)", "/$1"); // /./otherpath -> /otherpath
-		asString = asString.replaceAll("[^/]+/\\.\\./?", ""); // path/.. -> <nothing>
+		while (!stringIsMinimized(asString)) {
+			asString = ONE_DOT.matcher(asString).replaceAll("/");
+			asString = TWO_DOTS.matcher(asString).replaceAll("");
+		}
 		return FilePath.from(asString);
+	}
+
+	/** Checks if this path is minimized.
+	 *
+	 * @return true if and only if this path is minimized, false otherwise.
+	 * @see FilePath#isStringMinimized()
+	 * @see FilePath#minimize() */
+	public boolean isMinimized() {
+		return stringIsMinimized(toString());
 	}
 
 	/** @return the number of file entries in this path. */
@@ -223,5 +239,16 @@ public class FilePath implements Iterable<FileEntry> {
 	 * @return */
 	public static final FilePath from(final String path) {
 		return from(path, "/");
+	}
+
+	/** Checks if the given string is minimized.
+	 *
+	 * @param str
+	 *            the str to check
+	 * @return true if and only if the string is minimized, false otherwise.
+	 * @see FilePath#isMinimized()
+	 * @see FilePath#minimize() */
+	public static boolean stringIsMinimized(final String str) {
+		return !(ONE_DOT.matcher(str).find() || TWO_DOTS.matcher(str).find());
 	}
 }
